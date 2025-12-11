@@ -52,9 +52,12 @@ write_sdc > ../output/pwm_controller_initial.sdc
 
 puts ">>> Generating reports..."
 report_area > ../report/initial/area.log
+report_area -depth 10 > ../report/initial/area_hierarchy.log
 report_timing -nworst 10 > ../report/initial/timing.log
 report_power > ../report/initial/power.log
+report_power -depth 10 > ../report/initial/power_hierarchy.log
 report_gates > ../report/initial/gates.log
+report_gates > ../report/initial/gates_hierarchy.log
 report_qor > ../report/initial/qor.log
 
 set initial_area [join [lindex [split [exec grep -i "Total Area" ../report/initial/area.log] :] 1]]
@@ -95,8 +98,10 @@ foreach freq $freq_list {
 
     exec mkdir -p ../report/exercise1_${freq}MHz
     report_area > ../report/exercise1_${freq}MHz/area.log
+    report_area -depth 10 > ../report/exercise1_${freq}MHz/area_hierarchy.log
     report_timing -nworst 5 > ../report/exercise1_${freq}MHz/timing.log
     report_power > ../report/exercise1_${freq}MHz/power.log
+    report_power -depth 10 > ../report/exercise1_${freq}MHz/power_hierarchy.log
 
     puts "  $freq MHz: Check ../report/exercise1_${freq}MHz/"
 }
@@ -127,8 +132,10 @@ foreach effort $effort_list {
 
     exec mkdir -p ../report/exercise2_${effort}_effort
     report_area > ../report/exercise2_${effort}_effort/area.log
+    report_area -depth 10 > ../report/exercise2_${effort}_effort/area_hierarchy.log
     report_timing > ../report/exercise2_${effort}_effort/timing.log
     report_power > ../report/exercise2_${effort}_effort/power.log
+    report_power -depth 10 > ../report/exercise2_${effort}_effort/power_hierarchy.log
 }
 
 puts "\n>>> LAB 1 COMPLETED!"

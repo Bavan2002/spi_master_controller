@@ -45,7 +45,9 @@ exec mkdir -p ../output/part1
 exec mkdir -p ../report/part1_afterscan_synthesis
 write_hdl > ../output/part1/pwm_controller_scan.v
 report_area > ../report/part1_afterscan_synthesis/area.log
+report_area -depth 10 > ../report/part1_afterscan_synthesis/area_hierarchy.log
 report_gates > ../report/part1_afterscan_synthesis/gates.log
+report_gates > ../report/part1_afterscan_synthesis/gates_hierarchy.log
 report_port > ../report/part1_afterscan_synthesis/ports.log
 
 puts ">>> Defining scan chain..."
@@ -70,6 +72,8 @@ exec mkdir -p ../report/part1_afterscan_connect
 report_scan_setup > ../report/part1_scan_setup.log
 report_scan_chains > ../report/part1_scan_chains.log
 report_area > ../report/part1_afterscan_connect/area.log
+report_area -depth 10 > ../report/part1_afterscan_connect/area_hierarchy.log
+report_gates > ../report/part1_afterscan_connect/gates_hierarchy.log
 report_port > ../report/part1_afterscan_connect/ports.log
 
 write_hdl > ../output/part1/pwm_controller_dft.v
@@ -119,6 +123,8 @@ exec mkdir -p ../output/exercise_2chains
 exec mkdir -p ../report/exercise_2chains
 report_scan_chains > ../report/exercise_2chains/scan_chains.log
 report_area > ../report/exercise_2chains/area.log
+report_area -depth 10 > ../report/exercise_2chains/area_hierarchy.log
+report_gates > ../report/exercise_2chains/gates_hierarchy.log
 write_hdl > ../output/exercise_2chains/pwm_controller_dft_2chains.v
 write_scandef > ../output/exercise_2chains/pwm_controller_dft_2chains.scandef
 

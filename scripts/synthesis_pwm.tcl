@@ -49,9 +49,33 @@ write_sdc > ../output/pwm_controller.sdc
 # 9. Generate reports
 puts "\n[8] Generating reports..."
 report_area > ../report/pwm_area.log
+report_area -depth 10 > ../report/pwm_area_hierarchy.log
 report_timing -nworst 10 > ../report/pwm_timing.log
 report_power > ../report/pwm_power.log
+report_power -depth 10 > ../report/pwm_power_hierarchy.log
 report_gates > ../report/pwm_gates.log
+
+# Hierarchical gates report (manual breakdown)
+puts "\n\[8a\] Generating hierarchical gates breakdown..."
+set outfile [open ../report/pwm_gates_hierarchy.log w]
+puts $outfile "=========================================="
+puts $outfile "Hierarchical Gates Report - PWM Controller"
+puts $outfile "=========================================="
+puts $outfile ""
+puts $outfile "Top Level (pwm_controller):"
+puts $outfile "------------------------------------------"
+close $outfile
+report_gates >> ../report/pwm_gates_hierarchy.log
+
+# Try to report for each submodule (may not exist if flattened)
+set outfile [open ../report/pwm_gates_hierarchy.log a]
+puts $outfile ""
+puts $outfile "NOTE: Hierarchical instance reporting skipped."
+puts $outfile "      Use 'report_area -depth 10' for hierarchical area breakdown."
+puts $outfile "      Gates are reported at top-level only."
+puts $outfile ""
+puts $outfile "To see hierarchy, check pwm_area_hierarchy.log"
+close $outfile
 
 # 10. Summary
 puts "\n=========================================="
@@ -61,10 +85,13 @@ puts "Output files:"
 puts "  Netlist: ../output/pwm_controller.v"
 puts "  SDC:     ../output/pwm_controller.sdc"
 puts "Reports:"
-puts "  Area:    ../report/pwm_area.log"
-puts "  Timing:  ../report/pwm_timing.log"
-puts "  Power:   ../report/pwm_power.log"
-puts "  Gates:   ../report/pwm_gates.log"
+puts "  Area:         ../report/pwm_area.log"
+puts "  Area (hier):  ../report/pwm_area_hierarchy.log"
+puts "  Timing:       ../report/pwm_timing.log"
+puts "  Power:        ../report/pwm_power.log"
+puts "  Power (hier): ../report/pwm_power_hierarchy.log"
+puts "  Gates:        ../report/pwm_gates.log"
+puts "  Gates (hier): ../report/pwm_gates_hierarchy.log"
 puts "=========================================="
 
 exit

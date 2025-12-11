@@ -48,9 +48,13 @@ write_hdl > ../output/pwm_controller_scan.v
 
 # 13. Generate reports after scan synthesis
 report_area > ../report/afterscan_synthesis/area.log
+report_area -depth 10 > ../report/afterscan_synthesis/area_hierarchy.log
 report_timing -nworst 10 > ../report/afterscan_synthesis/timing.log
 report_gates > ../report/afterscan_synthesis/gates.log
 report_power > ../report/afterscan_synthesis/power.log
+report_power -depth 10 > ../report/afterscan_synthesis/power_hierarchy.log
+
+# Note: Gates reported at top-level only (hierarchy may be flattened)
 
 # 14. Define scan chain (single clock domain)
 define_scan_chain -name pwm_chain \
@@ -86,9 +90,13 @@ write_scandef > ../output/pwm_controller_dft.scandef
 
 # 22. Generate final reports
 report_area > ../report/afterscan_connect/area.log
+report_area -depth 10 > ../report/afterscan_connect/area_hierarchy.log
 report_timing -nworst 10 > ../report/afterscan_connect/timing.log
 report_gates > ../report/afterscan_connect/gates.log
 report_power > ../report/afterscan_connect/power.log
+report_power -depth 10 > ../report/afterscan_connect/power_hierarchy.log
+
+# Note: Gates reported at top-level only (hierarchy may be flattened)
 
 # 23. Write ATPG scripts
 write_dft_atpg -library ../input/libs/gsclib045/timing/slow_vdd1v0_basicCells.lib

@@ -39,9 +39,20 @@ write_sdc > ../output/pwm_controller_chip.sdc
 
 puts "\n[8] Generating reports..."
 report_area > ../report/pwm_pads_area.log
+report_area -depth 10 > ../report/pwm_pads_area_hierarchy.log
 report_timing -nworst 10 > ../report/pwm_pads_timing.log
 report_power > ../report/pwm_pads_power.log
+report_power -depth 10 > ../report/pwm_pads_power_hierarchy.log
 report_gates > ../report/pwm_pads_gates.log
+
+# Gates report (top-level only - hierarchy may be flattened)
+puts "\n\[8a\] Gates report generated"
+puts "  For hierarchical breakdown, see area/power hierarchy reports"
+
+puts "\n\[9\] All reports generated"
+puts "  Area breakdown: ../report/pwm_pads_area_hierarchy.log"
+puts "  Power breakdown: ../report/pwm_pads_power_hierarchy.log"
+puts "  Gates report:   ../report/pwm_pads_gates.log"
 
 puts "\n=========================================="
 puts "PWM Controller Synthesis with Pads completed!"
