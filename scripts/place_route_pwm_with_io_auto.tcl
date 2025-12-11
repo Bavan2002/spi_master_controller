@@ -1,24 +1,32 @@
 #==============================================================================
-# Automated Place and Route Script with IO Area for PWM Controller - Lab 3
+# PWM Controller Place and Route Script with IO Pads
+# Based on EN4603 Lab 3 Instructions
+# Run in Innovus: cd work && innovus -files ../scripts/place_route_pwm_with_io_auto.tcl
 #==============================================================================
 
 puts "=========================================="
-puts "PWM Controller Place and Route Flow with IO Area"
+puts "PWM Controller Place & Route with IO Pads"
 puts "=========================================="
+
+# Create base directories
+exec mkdir -p ../output
+exec mkdir -p ../report
+exec mkdir -p ../log
 
 #==============================================================================
 # CONFIGURATION - Set to 1 to enable IO pad wrapper, 0 for core-only
 #==============================================================================
 set USE_IO_WRAPPER 1
 
-# 1. Set up library paths
+# Step 1: Set up library paths
+puts "Step 1: Setting up library paths..."
 set TECH_LEF "../input/libs/gsclib045/lef/gsclib045_tech.lef"
 set MACRO_LEF "../input/libs/gsclib045/lef/gsclib045_macro.lef"
 set MBDFF_LEF "../input/libs/gsclib045/lef/gsclib045_multibitsDFF.lef"
 set IOPAD_LEF "../input/libs/gsclib045/lef/giolib045.lef"
 
-# 2. Import design
-puts "\n[1] Importing design..."
+# Step 2: Import design
+puts "Step 2: Importing design..."
 if {$USE_IO_WRAPPER} {
     puts "INFO: Using IO wrapper design (pwm_controller_chip with pads)"
     set init_verilog "../output/pwm_controller_chip.v"
@@ -26,7 +34,7 @@ if {$USE_IO_WRAPPER} {
     set init_top_cell "pwm_controller_chip"
 } else {
     puts "INFO: Using core-only design (pwm_controller without pads)"
-    set init_verilog "../output/pwm_controller.v"
+    set init_verilog "../output/pwm_controller_2.v"
     set init_design_name "pwm_controller"
     set init_top_cell "pwm_controller"
 }
@@ -43,13 +51,13 @@ set init_gnd_net "VSS"
 
 init_design
 
-# 3. Set design mode
-puts "\n[2] Setting design mode..."
+# Step 3: Set design mode
+puts "Step 3: Setting design mode for 45nm process..."
 setDesignMode -process 45
 
-# 4. Load IO placement file (if using IO wrapper)
+# Step 4: Load IO placement file (if using IO wrapper)
 if {$USE_IO_WRAPPER} {
-    puts "\n[3a] Loading IO placement file..."
+    puts "Step 4: Loading IO placement file..."
     if {[file exists "../input/pwm_controller.io"]} {
         loadIoFile ../input/pwm_controller.io
         puts "INFO: IO placement file loaded successfully"
@@ -58,27 +66,31 @@ if {$USE_IO_WRAPPER} {
     }
 }
 
-# 5. Floorplan with IO area margins
-puts "\n[3] Creating floorplan with IO area..."
+# Step 5: Create floorplan with IO area
+puts "Step 5: Creating floorplan with IO area..."
 
 if {$USE_IO_WRAPPER} {
-    floorPlan -r 1.0 0.30 \
-        -coreMargins 150 150 150 150 \
-        -coreMarginsBy io
-    puts "Floorplan created with IO pad ring support"
+    # Core utilization 0.4 for IO wrapper design
+    # Large margins (150um) for IO pad placement
+    floorPlan -r 1.0 0.4 150 150 150 150
+    puts "INFO: Floorplan created with IO pad margins"
 } else {
-    floorPlan -r 1.0 0.30 150 150 150 150
-    puts "Floorplan created with IO margins (core-only)"
+    floorPlan -r 1.0 0.4 5 5 5 5
+    puts "INFO: Floorplan created for core-only design"
 }
 
 puts "Floorplan configuration:"
-puts "  - Core utilization: 0.30 (30%)"
-puts "  - Core margins: 150um (all sides)"
+puts "  - Core utilization: 0.4 (40%)"
 puts "  - Aspect ratio: 1.0"
-
-# 6. Commit IO pad placement (if using IO wrapper)
 if {$USE_IO_WRAPPER} {
-    puts "\n[4a] Committing IO pad placement..."
+    puts "  - Core margins: 150um (for IO pads)"
+} else {
+    puts "  - Core margins: 5um (core-only)"
+}
+
+# Step 6: Commit IO pad placement (if using IO wrapper)
+if {$USE_IO_WRAPPER} {
+    puts "Step 6: Committing IO pad placement..."
     if {[catch {commitIoPlacement} result]} {
         puts "WARNING: IO placement commit failed or not needed: $result"
     } else {
@@ -86,38 +98,38 @@ if {$USE_IO_WRAPPER} {
     }
 }
 
-# 7. Add power rings
-puts "\n[4] Adding power rings..."
+# Step 7: Add power rings
+puts "Step 7: Adding power rings..."
 addRing -nets {VDD VSS} -type core_rings -follow core \
     -layer {top Metal7 bottom Metal7 left Metal8 right Metal8} \
     -width {top 2.0 bottom 2.0 left 2.0 right 2.0} \
     -spacing {top 1.0 bottom 1.0 left 1.0 right 1.0} \
     -offset {top 1.0 bottom 1.0 left 1.0 right 1.0}
 
-# 8. Add power stripes
-puts "\n[5] Adding power stripes..."
+# Step 8: Add power stripes
+puts "Step 8: Adding power stripes..."
 addStripe -nets {VDD VSS} -layer Metal7 -direction horizontal \
     -width 1.0 -spacing 0.8 -set_to_set_distance 20 -start_from left
 
 addStripe -nets {VDD VSS} -layer Metal8 -direction vertical \
     -width 1.0 -spacing 0.8 -set_to_set_distance 20 -start_from bottom
 
-# 9. Place pins
-puts "\n[6] Placing pins..."
+# Step 9: Place pins
+puts "Step 9: Placing pins..."
 editPin -pin * -edge 0 -spacing 10 -layer 3 -spreadType side -unit MICRON
 
-# 10. Place standard cells
-puts "\n[7] Placing standard cells..."
+# Step 10: Place standard cells with pre-place optimization
+puts "Step 10: Placing standard cells with pre-place optimization..."
 setPlaceMode -place_global_reorder_scan false
 placeDesign -prePlaceOpt
 
-# 11. Pre-CTS optimization
-puts "\n[8] Pre-CTS optimization..."
+# Step 11: Pre-CTS optimization
+puts "Step 11: Running pre-CTS optimization..."
 setOptMode -fixCap true -fixTran true -fixFanoutLoad false
 optDesign -preCTS
 
-# 12. Route power
-puts "\n[9] Routing power nets..."
+# Step 12: Route power nets
+puts "Step 12: Routing power nets..."
 sroute -connect { blockPin padPin padRing corePin floatingStripe } \
     -layerChangeRange { Metal1 Metal11 } \
     -blockPinTarget { nearestTarget } \
@@ -132,59 +144,83 @@ sroute -connect { blockPin padPin padRing corePin floatingStripe } \
     -blockPin useLef \
     -targetViaLayerRange { Metal1 Metal11 }
 
-# 13. Clock tree synthesis
-puts "\n[11] Clock tree synthesis..."
+# Step 13: Clock tree synthesis
+puts "Step 13: Running clock tree synthesis..."
 create_ccopt_clock_tree_spec
 ccopt_design
 
-# 14. Post-CTS optimization
-puts "\n[12] Post-CTS optimization..."
+# Step 14: Post-CTS optimization
+puts "Step 14: Running post-CTS optimization..."
 optDesign -postCTS -hold
 
-# 15. Signal routing
-puts "\n[14] Signal routing..."
+# Step 15: Post-CTS timing analysis
+puts "Step 15: Post-CTS timing analysis..."
+exec mkdir -p ../report/post_CTS
+timeDesign -postCTS -hold -outDir ../report/post_CTS
+
+# Step 16: Signal routing
+puts "Step 16: Running signal routing..."
 setNanoRouteMode -quiet -routeWithTimingDriven true
 setNanoRouteMode -quiet -routeWithSiDriven true
 routeDesign -globalDetail
 
-# 16. Post-route optimization
-puts "\n[15] Post-route optimization..."
+# Step 17: Post-route timing analysis
+puts "Step 17: Post-route timing analysis (OCV)..."
 setAnalysisMode -analysisType onChipVariation
+timeDesign -postRoute -outDir ../report
+
+# Step 18: Post-route optimization
+puts "Step 18: Post-route optimization..."
 optDesign -postRoute -hold
 
-# 17. Add filler cells
-puts "\n[17] Adding filler cells..."
-addFiller -cell FILL1 FILL2 FILL4 FILL8 FILL16 FILL32 FILL64 -prefix FILLER
+# Step 19: Place filler cells
+puts "Step 19: Placing filler cells..."
+addFiller -cell FILL1 FILL2 FILL4 FILL8 FILL16 FILL32 FILL64 -prefix FILLER -fitGap
 
-# 18. Verify geometry and connectivity
-puts "\n[18] Running verification..."
-verifyGeometry > ../report/pwm_io_geometry.rpt
-verifyConnectivity > ../report/pwm_io_connectivity.rpt
+# Step 20: Verify geometry
+puts "Step 20: Verifying geometry..."
+verifyGeometry -report ../report/pwm_io_geometry.rpt
 
-# 19. Final reports
-puts "\n[19] Generating final reports..."
+# Step 21: Verify connectivity
+puts "Step 21: Verifying connectivity..."
+verifyConnectivity -report ../report/pwm_io_connectivity.rpt
+
+# Step 22: Generate final reports
+puts "Step 22: Generating final reports..."
 report_area > ../report/pwm_io_final_area.log
 report_power > ../report/pwm_io_final_power.log
 report_timing > ../report/pwm_io_final_timing.log
 summaryReport -noHtml -outfile ../report/pwm_io_summary.rpt
 
-# 20. Save design
-puts "\n[21] Saving design..."
+# Step 23: Save design database
+puts "Step 23: Saving design database..."
 saveDesign ../output/pwm_controller_with_io.enc
 
-# 21. Export GDSII
-puts "\n[22] Exporting GDSII..."
-streamOut ../output/pwm_controller_with_io.gds \
-    -libName pwm_controller_io \
-    -structureName pwm_controller \
-    -units 1000 \
-    -mode ALL
+# Step 24: Export GDSII
+puts "Step 24: Exporting GDSII layout..."
+# Check if map file exists
+if {[file exists "../input/streamOut.map"]} {
+    streamOut ../output/pwm_controller_with_io.gds \
+        -mapFile ../input/streamOut.map \
+        -libName pwm_lib \
+        -structureName pwm_controller_chip \
+        -units 1000 \
+        -mode ALL
+} else {
+    streamOut ../output/pwm_controller_with_io.gds \
+        -libName pwm_lib \
+        -structureName pwm_controller_chip \
+        -units 1000 \
+        -mode ALL
+}
 
 puts "\n=========================================="
-puts "Place and Route with IO Area completed!"
+puts "PWM Controller P&R with IO Pads Complete!"
 puts "=========================================="
-puts "Output Files:"
-puts "  GDS: ../output/pwm_controller_with_io.gds"
-puts "  Design: ../output/pwm_controller_with_io.enc"
+puts "GDSII:    ../output/pwm_controller_with_io.gds"
+puts "Database: ../output/pwm_controller_with_io.enc"
+puts "Reports:  ../report/pwm_io_*.log"
 puts "=========================================="
+
+exit
 

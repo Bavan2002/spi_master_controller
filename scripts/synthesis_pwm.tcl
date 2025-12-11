@@ -1,97 +1,81 @@
 #==============================================================================
-# Synthesis Script for PWM Controller
-# Run this script in Genus: genus -f synthesis_pwm.tcl
+# PWM Controller Synthesis Script
+# Based on EN4603 Lab Instructions
+# Run in Genus: cd work && genus -f ../scripts/synthesis_pwm.tcl
 #==============================================================================
 
-puts "=========================================="
-puts "PWM Controller Synthesis"
-puts "=========================================="
+# Step 1: Start Genus (done externally)
+# Command: cd work && genus -f ../scripts/synthesis_pwm.tcl
 
-# 1. Setup libraries
-source ../scripts/setup_pwm.tcl
+# Step 2: Set library search paths and load technology libraries
+puts "Step 2: Setting up library paths and technology files..."
+set_db init_lib_search_path {../input/libs/gsclib045/lef ../input/libs/gsclib045/timing ../input/libs/gsclib045/qrc/qx}
+set_db library {slow_vdd1v0_basicCells.lib fast_vdd1v0_basicCells.lib}
+set_db lef_library {gsclib045_tech.lef gsclib045_macro.lef gsclib045_multibitsDFF.lef}
+set_db qrc_tech_file gpdk045.tch
 
-# 2. Read RTL design
-puts "\n[1] Reading RTL files..."
-read_hdl ../input/rtl/timer_module.v
-read_hdl ../input/rtl/pwm_generator.v
-read_hdl ../input/rtl/pwm_controller.v
+# Step 3: Read RTL design files
+puts "Step 3: Reading RTL design files..."
+read_hdl [glob ../input/rtl/*.v]
 
-# 3. Elaborate the design
-puts "\n[2] Elaborating pwm_controller..."
+# Step 4: Elaborate the design
+puts "Step 4: Elaborating pwm_controller..."
 elaborate pwm_controller
 
-# 4. Check design
-puts "\n[3] Checking design..."
+# Step 5: Check design
+puts "Step 5: Checking design integrity..."
 check_design > ../log/checkdesign_pwm.log
 
-# 5. Apply constraints
-puts "\n[4] Applying constraints..."
+# Step 6: Uniquify the design
+puts "Step 6: Uniquifying design..."
+uniquify pwm_controller
+
+# Step 7: Apply timing constraints
+puts "Step 7: Applying timing constraints..."
 source ../input/constraints_pwm.tcl
 
-# 6. Synthesize
-puts "\n[5] Running synthesis..."
+# Step 8: Synthesize the design
+puts "Step 8: Running synthesis (generic -> map -> optimize)..."
 set_db syn_generic_effort medium
 syn_generic
 
 set_db syn_map_effort medium
 syn_map
 
-# 7. Optimize
-puts "\n[6] Running optimization..."
 set_db syn_opt_effort medium
 syn_opt
 
-# 8. Write outputs
-puts "\n[7] Writing outputs..."
-write_hdl > ../output/pwm_controller.v
+# Step 9: Write netlist and constraints
+puts "Step 9: Writing netlist and SDC files..."
+exec mkdir -p ../output
+exec mkdir -p ../report
+exec mkdir -p ../log
+write -mapped > ../output/pwm_controller.v
 write_sdc > ../output/pwm_controller.sdc
 
-# 9. Generate reports
-puts "\n[8] Generating reports..."
+# Step 10: Generate reports
+puts "Step 10: Generating synthesis reports..."
+
+# Basic reports (as per lab instructions)
 report_area > ../report/pwm_area.log
-report_area -depth 10 > ../report/pwm_area_hierarchy.log
 report_timing -nworst 10 > ../report/pwm_timing.log
+report_port * > ../report/pwm_ports.log
 report_power > ../report/pwm_power.log
-report_power -depth 10 > ../report/pwm_power_hierarchy.log
 report_gates > ../report/pwm_gates.log
 
-# Hierarchical gates report (manual breakdown)
-puts "\n\[8a\] Generating hierarchical gates breakdown..."
-set outfile [open ../report/pwm_gates_hierarchy.log w]
-puts $outfile "=========================================="
-puts $outfile "Hierarchical Gates Report - PWM Controller"
-puts $outfile "=========================================="
-puts $outfile ""
-puts $outfile "Top Level (pwm_controller):"
-puts $outfile "------------------------------------------"
-close $outfile
-report_gates >> ../report/pwm_gates_hierarchy.log
+# Additional hierarchical reports for detailed analysis
+report_area -depth 10 > ../report/pwm_area_hierarchy.log
+report_power -depth 10 > ../report/pwm_power_hierarchy.log
 
-# Try to report for each submodule (may not exist if flattened)
-set outfile [open ../report/pwm_gates_hierarchy.log a]
-puts $outfile ""
-puts $outfile "NOTE: Hierarchical instance reporting skipped."
-puts $outfile "      Use 'report_area -depth 10' for hierarchical area breakdown."
-puts $outfile "      Gates are reported at top-level only."
-puts $outfile ""
-puts $outfile "To see hierarchy, check pwm_area_hierarchy.log"
-close $outfile
+# Step 11: Optional GUI (uncomment to launch)
+# gui_show
 
-# 10. Summary
 puts "\n=========================================="
-puts "PWM Controller Synthesis completed!"
+puts "PWM Controller Synthesis Complete!"
 puts "=========================================="
-puts "Output files:"
-puts "  Netlist: ../output/pwm_controller.v"
-puts "  SDC:     ../output/pwm_controller.sdc"
-puts "Reports:"
-puts "  Area:         ../report/pwm_area.log"
-puts "  Area (hier):  ../report/pwm_area_hierarchy.log"
-puts "  Timing:       ../report/pwm_timing.log"
-puts "  Power:        ../report/pwm_power.log"
-puts "  Power (hier): ../report/pwm_power_hierarchy.log"
-puts "  Gates:        ../report/pwm_gates.log"
-puts "  Gates (hier): ../report/pwm_gates_hierarchy.log"
+puts "Netlist:  ../output/pwm_controller.v"
+puts "SDC:      ../output/pwm_controller.sdc"
+puts "Reports:  ../report/pwm_*.log"
 puts "=========================================="
 
-exit
+gui_show
