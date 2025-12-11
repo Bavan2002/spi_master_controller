@@ -8,7 +8,7 @@ puts "PWM Controller Synthesis"
 puts "=========================================="
 
 # 1. Setup libraries
-source ../scripts/setup_spi.tcl
+source ../scripts/setup_pwm.tcl
 
 # 2. Read RTL design
 puts "\n[1] Reading RTL files..."

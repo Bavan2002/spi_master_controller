@@ -1,25 +1,27 @@
 #==============================================================================
-# DFT Insertion Script for SPI Master - Lab 2
-# Run this script in Genus: genus -f dft_insertion_spi.tcl
+# DFT Insertion Script for PWM Controller - Lab 2
+# Run this script in Genus: genus -f dft_insertion_pwm.tcl
 #==============================================================================
 
 # 1. Setup libraries
-source ../scripts/setup_spi.tcl
+source ../scripts/setup_pwm.tcl
 
 # 2. Read RTL design
-read_hdl ../input/rtl/spi_master.v
+read_hdl ../input/rtl/timer_module.v
+read_hdl ../input/rtl/pwm_generator.v
+read_hdl ../input/rtl/pwm_controller.v
 
 # 3. Elaborate the design
-elaborate spi_master
+elaborate pwm_controller
 
 # 4. Check design
 check_design > ../log/checkdesign.log
 
 # 5. Uniquify
-uniquify spi_master
+uniquify pwm_controller
 
 # 6. Apply constraints
-source ../input/constraints_spi.tcl
+source ../input/constraints_pwm.tcl
 
 # 7. Set DFT scan style
 set_db dft_scan_style muxed_scan
@@ -40,7 +42,9 @@ set_db syn_map_effort medium
 syn_map
 
 # 12. Write scan synthesized netlist
-write_hdl > ../output/spi_master_scan.v
+exec mkdir -p ../output
+exec mkdir -p ../report/afterscan_synthesis
+write_hdl > ../output/pwm_controller_scan.v
 
 # 13. Generate reports after scan synthesis
 report_area > ../report/afterscan_synthesis/area.log
@@ -49,7 +53,7 @@ report_gates > ../report/afterscan_synthesis/gates.log
 report_power > ../report/afterscan_synthesis/power.log
 
 # 14. Define scan chain (single clock domain)
-define_scan_chain -name spi_chain \
+define_scan_chain -name pwm_chain \
     -sdi scan_in \
     -sdo scan_out \
     -non_shared_output \
@@ -69,15 +73,16 @@ syn_opt -incr
 check_dft_rules > ../log/dft_check_post.log
 
 # 19. Report scan setup
+exec mkdir -p ../report/afterscan_connect
 report_scan_setup > ../report/scan_setup.log
 report_scan_chains > ../report/scan_chains.log
 
 # 20. Write final netlist with scan
-write_hdl > ../output/spi_master_dft.v
-write_sdc > ../output/spi_master_dft.sdc
+write_hdl > ../output/pwm_controller_dft.v
+write_sdc > ../output/pwm_controller_dft.sdc
 
 # 21. Write scanDEF file for Place & Route
-write_scandef > ../output/spi_master_dft.scandef
+write_scandef > ../output/pwm_controller_dft.scandef
 
 # 22. Generate final reports
 report_area > ../report/afterscan_connect/area.log

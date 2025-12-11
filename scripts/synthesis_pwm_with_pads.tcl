@@ -6,7 +6,7 @@ puts "=========================================="
 puts "PWM Controller Synthesis with IO Pads"
 puts "=========================================="
 
-source ../scripts/setup_spi.tcl
+source ../scripts/setup_pwm.tcl
 
 puts "\n[1] Reading RTL files..."
 read_hdl ../input/rtl/timer_module.v
