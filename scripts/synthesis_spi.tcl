@@ -37,6 +37,19 @@ report_area > ../report/area.log
 report_timing -nworst 10 > ../report/timing.log
 report_power > ../report/power.log
 report_gates > ../report/gates.log
+report_qor > ../report/qor.log
 
-# 11. Exit
+# 11. Summary
+puts "=========================================="
+puts "Synthesis Summary"
+puts "=========================================="
+report_area
+puts "=========================================="
+report_gates
+puts "=========================================="
+report_timing -summary
+puts "=========================================="
 puts "Synthesis completed successfully!"
+puts "Outputs: ../output/spi_master.v, ../output/spi_master.sdc"
+puts "Reports: ../report/*.log"
+puts "==========================================="

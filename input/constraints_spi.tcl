@@ -48,11 +48,11 @@ set_input_transition 0.2 [all_inputs]
 # Set load capacitance on outputs (in pF)
 set_load 0.5 [all_outputs]
 
-# Set operating conditions
-set_operating_conditions typical
+# Set operating conditions (commented out - will use library defaults)
+# set_operating_conditions typical
 
-# Set wire load model
-set_wire_load_model -name enclosed
+# Set wire load model (commented out - will use library defaults)
+# set_wire_load_model -name enclosed
 
 # Set drive strength on inputs (assuming driven by standard buffer)
 set_driving_cell -lib_cell BUFX2 [all_inputs]
