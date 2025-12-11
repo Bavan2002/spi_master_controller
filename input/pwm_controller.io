@@ -1,7 +1,10 @@
 #==============================================================================
-# IO Placement File for PWM Controller Chip
-# Defines pad locations around chip perimeter for Lab 3
-# Format: Innovus IO placement file (.io)
+# IO Placement File for PWM Controller Chip - DEPRECATED
+# This file uses UNEVEN distribution (grouped by function)
+# For EVEN distribution across 4 edges, use pwm_controller_even.io instead
+# 
+# NOTE: The automated script ignores this file by default and uses
+#       automatic round-robin distribution for better balance
 #==============================================================================
 
 (globals

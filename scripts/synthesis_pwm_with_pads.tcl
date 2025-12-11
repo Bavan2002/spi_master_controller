@@ -21,7 +21,8 @@ puts "\n[3] Checking design..."
 check_design > ../log/checkdesign_pwm_pads.log
 
 puts "\n[4] Applying constraints..."
-source ../input/constraints_pwm.tcl
+# Use constraints for chip wrapper (with PAD_ prefix on ports)
+source ../input/constraints_pwm_chip.tcl
 
 puts "\n[5] Running synthesis..."
 set_db syn_generic_effort medium

@@ -41,12 +41,29 @@ defIn ../output/pwm_controller_2_scanDEF.scandef
 puts "\nStep 4: Setting design mode for 45nm process..."
 setDesignMode -process 45
 
-# Step 5: Specify floorplan (as per lab instructions)
-puts "\nStep 5: Creating floorplan..."
-# Aspect ratio: 1.0
+# Step 5: Specify floorplan (SQUARE aspect ratio)
+puts "\nStep 5: Creating square floorplan..."
+# Aspect ratio: 1.0 (SQUARE)
 # Core Utilization: 0.4 (40%)
-# Core margins: 5 microns from core to IO boundary (all sides)
+# Core margins: 5 microns (EQUAL on all sides for square chip)
 floorPlan -r 1.0 0.4 5 5 5 5
+
+# Verify and report floorplan dimensions
+set core_box [dbGet top.fPlan.coreBox]
+set die_box [dbGet top.fPlan.box]
+set core_width [expr {[lindex $core_box 2] - [lindex $core_box 0]}]
+set core_height [expr {[lindex $core_box 3] - [lindex $core_box 1]}]
+set die_width [expr {[lindex $die_box 2] - [lindex $die_box 0]}]
+set die_height [expr {[lindex $die_box 3] - [lindex $die_box 1]}]
+
+puts "INFO: Floorplan created:"
+puts "      Core: [format %.2f $core_width]um x [format %.2f $core_height]um (aspect: [format %.3f [expr {$core_width/$core_height}]])"
+puts "      Die:  [format %.2f $die_width]um x [format %.2f $die_height]um (aspect: [format %.3f [expr {$die_width/$die_height}]])"
+if {abs($core_width - $core_height) < 1.0 && abs($die_width - $die_height) < 1.0} {
+    puts "      ✓ SQUARE chip achieved!"
+} else {
+    puts "      ⚠ Note: Chip is slightly rectangular (tool adjusted for standard cell rows)"
+}
 
 # Step 6: Add power rings (as per lab instructions)
 # Metal 7 for horizontal, Metal 8 for vertical
@@ -58,28 +75,128 @@ addRing -nets {VDD VSS} -type core_rings -follow core \
     -spacing {top 0.8 bottom 0.8 left 0.8 right 0.8} \
     -offset {top 0.8 bottom 0.8 left 0.8 right 0.8}
 
-# Step 7: Add power stripes (as per lab instructions)
-puts "\nStep 7: Adding power stripes..."
+# Step 7: Add power stripes (calculated for even coverage across entire core)
+puts "\nStep 7: Calculating and adding power stripes for full core coverage..."
 
-# Horizontal stripes on Metal 7
-puts "INFO: Adding horizontal stripes - Metal 7, Width: 1.0, Spacing: 0.8, Sets: 3"
+# Get core area dimensions
+set core_box [dbGet top.fPlan.coreBox]
+set core_llx [lindex $core_box 0]
+set core_lly [lindex $core_box 1]
+set core_urx [lindex $core_box 2]
+set core_ury [lindex $core_box 3]
+set core_width [expr {$core_urx - $core_llx}]
+set core_height [expr {$core_ury - $core_lly}]
+
+puts "INFO: Core dimensions: ${core_width}um x ${core_height}um"
+
+# Power stripe parameters
+set stripe_width 1.0
+set stripe_spacing 1.2  ;# Spacing between VDD and VSS within a set
+set target_num_sets 8   ;# Target number of stripe sets for good coverage
+
+# Calculate set-to-set distance for even distribution
+# Each set takes: stripe_width + spacing + stripe_width = 2*width + spacing
+set set_size [expr {2.0 * $stripe_width + $stripe_spacing}]
+
+# Calculate optimal spacing to cover entire core
+set horizontal_set_distance [expr {$core_height / double($target_num_sets)}]
+set vertical_set_distance [expr {$core_width / double($target_num_sets)}]
+
+puts "INFO: Stripe configuration:"
+puts "      Width: ${stripe_width}um, VDD-VSS spacing: ${stripe_spacing}um"
+puts "      Set size: ${set_size}um"
+puts "      Target sets: $target_num_sets per direction"
+puts "      Horizontal set spacing: [format %.2f $horizontal_set_distance]um"
+puts "      Vertical set spacing: [format %.2f $vertical_set_distance]um"
+
+# Add horizontal stripes on Metal 7 (evenly distributed from bottom to top)
+puts "INFO: Adding horizontal stripes (Metal 7)..."
 addStripe -nets {VDD VSS} -layer Metal7 -direction horizontal \
-    -width 1.0 -spacing 0.8 -number_of_sets 3 \
-    -start_from bottom -start_offset 15 -stop_offset 15
+    -width $stripe_width -spacing $stripe_spacing \
+    -set_to_set_distance $horizontal_set_distance \
+    -start_from bottom
 
-# Vertical stripes on Metal 8
-puts "INFO: Adding vertical stripes - Metal 8, Width: 1.0, Spacing: 0.8, Sets: 3"
+# Add vertical stripes on Metal 8 (evenly distributed from left to right)
+puts "INFO: Adding vertical stripes (Metal 8)..."
 addStripe -nets {VDD VSS} -layer Metal8 -direction vertical \
-    -width 1.0 -spacing 0.8 -number_of_sets 3 \
-    -start_from left -start_offset 15 -stop_offset 15
+    -width $stripe_width -spacing $stripe_spacing \
+    -set_to_set_distance $vertical_set_distance \
+    -start_from left
 
-# Step 8: Pin placement
-puts "\nStep 8: Placing pins..."
-# Spread all pins on edge 0 (top) with 5um spacing
-editPin -pin * -edge 0 -spacing 5 -layer 3 -spreadType side -unit MICRON
+puts "INFO: Power mesh created with full core coverage"
 
-# Step 8b: Save design checkpoint (prePlacement)
-puts "\nStep 8b: Saving design checkpoint (prePlacement)..."
+# Step 8: Pin placement - Distribute equally across all 4 edges
+puts "\nStep 8: Placing pins equally on all four edges..."
+# Edge 0 = Bottom, Edge 1 = Right, Edge 2 = Top, Edge 3 = Left
+# Using layer 3 (Metal3) for pin access
+
+# Get all pin names
+set all_pins [dbGet top.terms.name]
+set num_pins [llength $all_pins]
+set pins_per_edge [expr {$num_pins / 4}]
+set remainder [expr {$num_pins % 4}]
+
+puts "INFO: Total pins: $num_pins"
+puts "INFO: Distributing $pins_per_edge pins per edge (with $remainder extra)"
+
+# Distribute pins equally across 4 edges
+set edge0_pins {}
+set edge1_pins {}
+set edge2_pins {}
+set edge3_pins {}
+
+set idx 0
+foreach pin $all_pins {
+    set edge [expr {$idx % 4}]
+    if {$edge == 0} {
+        lappend edge0_pins $pin
+    } elseif {$edge == 1} {
+        lappend edge1_pins $pin
+    } elseif {$edge == 2} {
+        lappend edge2_pins $pin
+    } else {
+        lappend edge3_pins $pin
+    }
+    incr idx
+}
+
+# Place pins on each edge
+if {[llength $edge0_pins] > 0} {
+    puts "INFO: Placing [llength $edge0_pins] pins on Bottom edge (Edge 0)"
+    editPin -pin $edge0_pins -edge 0 -spacing 5 -layer 3 -spreadType side -unit MICRON
+}
+
+if {[llength $edge1_pins] > 0} {
+    puts "INFO: Placing [llength $edge1_pins] pins on Right edge (Edge 1)"
+    editPin -pin $edge1_pins -edge 1 -spacing 5 -layer 3 -spreadType side -unit MICRON
+}
+
+if {[llength $edge2_pins] > 0} {
+    puts "INFO: Placing [llength $edge2_pins] pins on Top edge (Edge 2)"
+    editPin -pin $edge2_pins -edge 2 -spacing 5 -layer 3 -spreadType side -unit MICRON
+}
+
+if {[llength $edge3_pins] > 0} {
+    puts "INFO: Placing [llength $edge3_pins] pins on Left edge (Edge 3)"
+    editPin -pin $edge3_pins -edge 3 -spacing 5 -layer 3 -spreadType side -unit MICRON
+}
+
+# Step 8b: Mark clock pin as CLOCK type
+puts "\nStep 8b: Setting clock pin attribute..."
+if {[catch {
+    set clk_term [dbGet top.terms.name clk -p]
+    if {$clk_term != ""} {
+        dbSet [dbGet top.terms.name clk -p].use clock
+        puts "INFO: Clock pin 'clk' marked as CLOCK (not SIGNAL)"
+    } else {
+        puts "WARNING: Could not find 'clk' pin"
+    }
+} err]} {
+    puts "WARNING: Could not set clock attribute: $err"
+}
+
+# Step 8c: Save design checkpoint (prePlacement)
+puts "\nStep 8c: Saving design checkpoint (prePlacement)..."
 saveDesign ../output/pwm_controller_prePlacement.enc
 
 # Step 9: Place standard cells

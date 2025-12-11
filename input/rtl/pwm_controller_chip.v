@@ -7,11 +7,8 @@
 `timescale 1ns/1ps
 
 module pwm_controller_chip (
-    // External IO Pads - Power
-    inout wire PAD_VDD,
-    inout wire PAD_VSS,
-    inout wire PAD_VDDIO,
-    inout wire PAD_VSSIO,
+    // Note: Power pads (VDD/VSS/VDDIO/VSSIO) don't have PAD ports
+    // They connect internally to supply1/supply0 nets
     
     // External IO Pads - System Signals
     inout wire PAD_clk,
@@ -82,7 +79,7 @@ module pwm_controller_chip (
 );
 
     //==========================================================================
-    // Internal Core Signals (between pads and core)
+    // Internal Core Signals
     //==========================================================================
     wire clk_core, reset_core;
     wire [7:0] period_core;
@@ -98,6 +95,14 @@ module pwm_controller_chip (
     wire period_complete_core, timer_overflow_core;
     
     //==========================================================================
+    // Power Supply Nets (for power pad connections)
+    //==========================================================================
+    supply1 VDD;      // Core power supply
+    supply0 VSS;      // Core ground
+    supply1 VDDIOR;   // IO ring power supply
+    supply0 VSSIOR;   // IO ring ground
+    
+    //==========================================================================
     // Corner Pad Cells
     //==========================================================================
     padIORINGCORNER corner_ll ();
@@ -106,14 +111,14 @@ module pwm_controller_chip (
     padIORINGCORNER corner_ur ();
     
     //==========================================================================
-    // Power Pad Cells
+    // Power Pad Cells (no PAD port - only power supply connections)
     //==========================================================================
-    PADVDD vdd_pad0 (.PAD(PAD_VDD));
-    PADVDD vdd_pad1 (.PAD(PAD_VDD));
-    PADVSS vss_pad0 (.PAD(PAD_VSS));
-    PADVSS vss_pad1 (.PAD(PAD_VSS));
-    PADVDDIOR vddio_pad0 (.PAD(PAD_VDDIO));
-    PADVSSIOR vssio_pad0 (.PAD(PAD_VSSIO));
+    PADVDD vdd_pad0 (.VDD(VDD), .VSS(VSS), .VDDIOR(VDDIOR), .VSSIOR(VSSIOR));
+    PADVDD vdd_pad1 (.VDD(VDD), .VSS(VSS), .VDDIOR(VDDIOR), .VSSIOR(VSSIOR));
+    PADVSS vss_pad0 (.VDD(VDD), .VSS(VSS), .VDDIOR(VDDIOR), .VSSIOR(VSSIOR));
+    PADVSS vss_pad1 (.VDD(VDD), .VSS(VSS), .VDDIOR(VDDIOR), .VSSIOR(VSSIOR));
+    PADVDDIOR vddio_pad0 (.VDD(VDD), .VSS(VSS), .VDDIOR(VDDIOR), .VSSIOR(VSSIOR));
+    PADVSSIOR vssio_pad0 (.VDD(VDD), .VSS(VSS), .VDDIOR(VDDIOR), .VSSIOR(VSSIOR));
     
     //==========================================================================
     // Input Pad Cells - System Signals
