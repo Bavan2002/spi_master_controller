@@ -110,8 +110,16 @@ module spi_master (
             end
 
             TRANSFER: begin
-                if (bit_counter == 4'd0 && clk_counter >= clk_divider) begin
-                    next_state = HOLD;
+                // For CPHA=0, exit when bit_counter=0
+                // For CPHA=1, exit when bit_counter=0 AND we're back at idle clock level
+                if (cpha == 1'b0) begin
+                    if (bit_counter == 4'd0 && clk_counter >= clk_divider) begin
+                        next_state = HOLD;
+                    end
+                end else begin
+                    if (bit_counter == 4'd0 && clk_counter >= clk_divider && internal_sclk == cpol) begin
+                        next_state = HOLD;
+                    end
                 end
             end
 
@@ -162,39 +170,39 @@ module spi_master (
 
                     // Set initial MOSI based on CPHA
                     if (cpha == 1'b0) begin
-                        // CPHA=0: Data valid on first edge
+                        // CPHA=0: Data valid before first clock edge
                         mosi <= tx_shift_reg[7];
+                        tx_shift_reg <= {tx_shift_reg[6:0], 1'b0};
+                    end else begin
+                        // CPHA=1: Data changes on first clock edge (don't output yet)
+                        mosi <= 1'b0;
                     end
                 end
 
                 TRANSFER: begin
-                    // Data shifting based on CPHA
+                    // Data shifting based on CPHA and clock edges
                     if (clk_counter == 4'd0) begin
                         if (cpha == 1'b0) begin
-                            // CPHA=0: Sample on first edge, shift on second
-                            if (internal_sclk == 1'b0) begin
-                                // Leading edge - sample MISO
+                            // CPHA=0: Data captured on leading edge, changes on trailing edge
+                            if (internal_sclk == cpol && bit_counter > 0) begin
+                                // Leading/capture edge - sample MISO
                                 rx_shift_reg <= {rx_shift_reg[6:0], miso};
-                            end else begin
-                                // Trailing edge - shift MOSI
-                                if (bit_counter > 0) begin
-                                    tx_shift_reg <= {tx_shift_reg[6:0], 1'b0};
-                                    mosi <= tx_shift_reg[7];
-                                    bit_counter <= bit_counter - 1'b1;
-                                end
-                            end
-                        end else begin
-                            // CPHA=1: Shift on first edge, sample on second
-                            if (internal_sclk == 1'b1) begin
-                                // Leading edge - shift MOSI
+                                bit_counter <= bit_counter - 1'b1;
+                            end else if (internal_sclk == ~cpol && bit_counter < 4'd8) begin
+                                // Trailing/change edge - shift out next bit on MOSI
                                 tx_shift_reg <= {tx_shift_reg[6:0], 1'b0};
                                 mosi <= tx_shift_reg[7];
-                            end else begin
-                                // Trailing edge - sample MISO
+                            end
+                        end else begin
+                            // CPHA=1: Data changes on leading edge, captured on trailing edge
+                            if (internal_sclk == ~cpol && bit_counter > 0) begin
+                                // Leading/change edge - shift out bit on MOSI
+                                mosi <= tx_shift_reg[7];
+                                tx_shift_reg <= {tx_shift_reg[6:0], 1'b0};
+                                bit_counter <= bit_counter - 1'b1;
+                            end else if (internal_sclk == cpol && bit_counter < 4'd8) begin
+                                // Trailing/capture edge - sample MISO (when bit_counter 0-7, i.e., < 8)
                                 rx_shift_reg <= {rx_shift_reg[6:0], miso};
-                                if (bit_counter > 0) begin
-                                    bit_counter <= bit_counter - 1'b1;
-                                end
                             end
                         end
                     end

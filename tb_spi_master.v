@@ -58,7 +58,7 @@ module tb_spi_master;
         forever #10 clk = ~clk; // 50MHz clock
     end
 
-    // Simple loopback for MISO
+    // Simple loopback for MISO (combinational)
     always @(*) begin
         miso = mosi; // Loopback mode for testing
     end

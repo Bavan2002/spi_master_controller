@@ -1,0 +1,133 @@
+# Vivado/Xilinx Simulation Files
+*.jou
+*.log
+*.pb
+*.wdb
+*.vcd
+xsim.dir/
+.Xil/
+xsim_project/
+*.str
+
+# Vivado Project Files
+*.cache/
+*.hw/
+*.ip_user_files/
+*.sim/
+*.runs/
+*.xpr
+vivado*.backup.*
+
+# Waveform files
+*.vcd
+*.wlf
+*.vstf
+*.saif
+
+# Simulation outputs
+xsim_output.log
+spi_master_sim.vcd
+
+# ModelSim/QuestaSim Files
+work/
+*.mti
+*.mpf
+*.wlf
+transcript
+vsim.wlf
+*.qdb
+
+# VCS Files
+*.daidir/
+csrc/
+simv*
+ucli.key
+*.vpd
+
+# NC-Verilog/Xcelium Files
+INCA_libs/
+*.shm/
+*.trn
+*.dsn
+.simvision/
+
+# Synopsys Files
+*.svf
+*.syn
+*.mr
+*.pvl
+
+# Temporary and backup files
+*~
+*.swp
+*.swo
+*.bak
+*.tmp
+*.orig
+*.old
+
+# OS Files
+.DS_Store
+Thumbs.db
+*.lnk
+
+# Build/Output directories
+build/
+output/
+bin/
+obj/
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.sublime-*
+*.code-workspace
+
+# Python (if any scripts)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+downloads/
+.eggs/
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+venv/
+env/
+ENV/
+
+# Documentation build files
+*.aux
+*.out
+*.toc
+*.pdf (if generated)
+
+# Compiled source
+*.o
+*.ko
+*.obj
+*.elf
+*.bin
+*.hex
+*.axf
+*.map
+
+# Packaging
+*.tar
+*.gz
+*.zip
+*.rar
+*.7z
+
+# Logs and databases
+*.sql
+*.sqlite
+*.db
